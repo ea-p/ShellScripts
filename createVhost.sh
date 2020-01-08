@@ -13,11 +13,13 @@ h) HELP=HELP;;
 *) 
 esac
 done
-
+#Path to a2ensite a2dissite scrips
 a2ensite=/usr/local/bin/a2ensite
 a2dissite=/usr/local/bin/dis2ensite
+#is it a reverse proxy (2) or simple vhost (1)
 vhost=1
 
+#PREREQs
 
 if [[ -n "$HELP" ]]; then
 printf "Script help goes here!\n"
@@ -33,14 +35,14 @@ if [[ -n "$APPROOT" ]]; then
     vhost=2
 fi
 
-#PREREQs
-##FUNCTIONS
+
+#FUNCTIONS
 show_help () {
 echo "
         Usage: Environment DBPassword [-s Website] [-a Approot] [-i IP] [-p Port]
 
         -s Website      Website name without www ex:example.com.
-        -a Approot      Revision number (0 means the latest revision).
+        -a Approot      Root of the application, if it gets proxied ex: /, /webroot
         -i IP           IP of proxied application
         -o PORT         Port of porxied appliaction
 
@@ -153,6 +155,8 @@ CAT<<END_SCRIPT > /etc/httpd/sites-available/"${SITE}".conf
 END_SCRIPT
 };
 
+
+
 ##a2ensite and a2dissite Scripts
 
 if ! [[ -f "$a2ensite" ]]; then
@@ -171,10 +175,6 @@ sudo chmod +r -R /var/www/"${SITE}"
 
 #CREATE VHOST
 if [[ $vhost = 2 ]]; then
-    if [[ -n "$IP" ]] || [[ -n "$PORT" ]]; then
-        printf "Either port or IP is not specified for the reverse proxy!"
-        exit 1
-    fi
     create_proxyvhost; else
     create_vhost
 fi
