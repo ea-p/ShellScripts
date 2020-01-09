@@ -2,25 +2,7 @@
 #VARIABLES
 myip= 
 
-#create log file
-logFileName=init_script_$(date +"%FT%H%M%z").log
-printf "Started logging..." > "$logFileName"
-
-#update everything
-dnf update -y &> /dev/null
-printf "\nUpdated everything." >> "$logFileName"
-
-#install system utilities
-dnf install nano vim wget curl net-tools lsof bash-completion -y >> "$logFileName"
-dnf clean all
-printf "\nInstalled nano, vim, wget, curl, net-tools, lsof and bash-completion. Cleaned up unnnecesary files left over." >> "$logFileName"
-
-#Create custom alias' script
-printf "alias sudo='sudo '\nalias rm='rm'\nalias mv='mv'\nalias cp='cp'\nalias ll='ls -la --color=auto'\nalias c='clear'\nalias ..='cd ..'\nalias mkdir='mkdir -pv'\nalias ping='ping -c 5'\n" > /etc/profile.d/global_aliases.sh
-chmod a+r /etc/profile.d/global_aliases.sh
-printf "\nCreated custom alias script." >> "$logFileName"
-
-#install Fail2Ban
+#FUNCTIONS
 installFail2Ban () {
     printf "\n\nDo you want to install Fail2Ban? (y/n)"
     read -r fail2ban
@@ -33,17 +15,6 @@ installFail2Ban () {
     fi      
 }
 
-installFail2Ban
-
-#configure fail2ban
-printf "\nFail2Ban is being configured."
-printf "\nFail2Ban is being configured." >> "$logFileName"
-cp /etc/fail2ban/jail.conf /etc/fail2ban/jail.local
-printf "\nCreated jail.local." >> "$logFileName"
-sed -i -E 's!^\n[DEFAULT] *![DEFAULT]\n# Ban IP/hosts for 1 hour ( 24h*3600s = 86400s):\nbantime = 3600\n\n# An ip address/host is banned if it has generated "maxretry" during the last "findtime" seconds.\n\nfindndtime = 300\nmaxretry = 3\n\n# "ignoreip" can be a list of IP addresses, CIDR masks or DNS hosts. Fail2ban\n# will not ban a host which matches an address in this list. Several addresses\n# can be defined using space (and/or comma) separator. For example, add your \n# static IP address that you always use for login such as 103.1.2.3\n#ignoreip = 127.0.0.1/8 ::1 103.1.2.3\nignoreip = '${myip}'\n# Call iptables to ban IP address \nbanaction = iptables-multiport \n\n# Enable sshd protection \n[sshd]\nenabled = true\n\n!' /etc/fail2ban/jail.local
-systemctl start fail2ban
-
-#create users function
 create_user_with_ssh () {
 if [ "$(id -u)" -eq 0 ]; then
     printf "\nStarted new user set up." >> "$logFileName"
@@ -112,12 +83,6 @@ read_answer () {
 read_answer
 }
 
-#call create user function
-create_user_with_ssh
-
-
-#modify sshd conf
-#Modify SSH Port
 modifySSHPort () {
     printf "\nStarted changing ssh port." >> "$logFileName"
     printf "\nEnter new SSH Port: "
@@ -133,9 +98,6 @@ modifySSHPort () {
     printf "%s\nChanged ssh port to: $port." >> "$logFileName"
 }
 
-modifySSHPort
-
-#modify LoginGraceTime
 modifyLoginGraceTime () {
     printf "\nStarted modyfing LoginGraceTime." >> "$logFileName"
     printf "\nSet new LoginGraceTime. Standard is 2 minutes (2m): "
@@ -151,9 +113,6 @@ modifyLoginGraceTime () {
     } >> "$logFileName"
 }
 
-modifyLoginGraceTime
-
-#modify PermitRootLogin
 modifyPermitRootLogin () {
     printf "\nStarted changing PermitRootLogin." >> "$logFileName"
     printf "\n\nSet wether the root user may login directly or not (y/n): "
@@ -173,9 +132,6 @@ modifyPermitRootLogin () {
     } >> "$logFileName"
 }
 
-modifyPermitRootLogin
-
-#set PubkeyAuthentication
 setPubkeyAuthentication () {
     printf "\nStarted changing PubKeyAuthentication." >> "$logFileName"
     printf "\n\nSet PubkeyAuthentication (y/n): "
@@ -195,10 +151,6 @@ setPubkeyAuthentication () {
     } >> "$logFileName"
 }
 
-setPubkeyAuthentication
-
-
-#set PasswordAuthentication
 setPasswordAuthentication () {
     printf "\nStarted changing PasswordAuthentication." >> "$logFileName"
     printf "\n\nSet PasswordAuthentication (y/n): "
@@ -218,9 +170,6 @@ setPasswordAuthentication () {
     } >> "$logFileName"
 }
 
-setPasswordAuthentication
-
-#install firewall, add new ssh port and initialize
 installFirewalld () {
     printf "\nStarted firewalld installation."
     printf "\nfirewalld will be installed."
@@ -230,6 +179,65 @@ installFirewalld () {
     systemctl start firewalld
     systemctl enable firewalld
 } 
+
+#create log file
+logFileName=init_script_$(date +"%FT%H%M%z").log
+printf "Started logging..." > "$logFileName"
+
+#update everything
+dnf update -y &> /dev/null
+printf "\nUpdated everything." >> "$logFileName"
+
+#install system utilities
+dnf install nano vim wget curl net-tools lsof bash-completion -y >> "$logFileName"
+dnf clean all
+printf "\nInstalled nano, vim, wget, curl, net-tools, lsof and bash-completion. Cleaned up unnnecesary files left over." >> "$logFileName"
+
+#Create custom alias' script
+printf "alias sudo='sudo '\nalias rm='rm'\nalias mv='mv'\nalias cp='cp'\nalias ll='ls -la --color=auto'\nalias c='clear'\nalias ..='cd ..'\nalias mkdir='mkdir -pv'\nalias ping='ping -c 5'\n" > /etc/profile.d/global_aliases.sh
+chmod a+r /etc/profile.d/global_aliases.sh
+printf "\nCreated custom alias script." >> "$logFileName"
+
+#install Fail2Ban
+
+installFail2Ban
+
+#configure fail2ban
+printf "\nFail2Ban is being configured."
+printf "\nFail2Ban is being configured." >> "$logFileName"
+cp /etc/fail2ban/jail.conf /etc/fail2ban/jail.local
+printf "\nCreated jail.local." >> "$logFileName"
+sed -i -E 's!^\n[DEFAULT] *![DEFAULT]\n# Ban IP/hosts for 1 hour ( 24h*3600s = 86400s):\nbantime = 3600\n\n# An ip address/host is banned if it has generated "maxretry" during the last "findtime" seconds.\n\nfindndtime = 300\nmaxretry = 3\n\n# "ignoreip" can be a list of IP addresses, CIDR masks or DNS hosts. Fail2ban\n# will not ban a host which matches an address in this list. Several addresses\n# can be defined using space (and/or comma) separator. For example, add your \n# static IP address that you always use for login such as 103.1.2.3\n#ignoreip = 127.0.0.1/8 ::1 103.1.2.3\nignoreip = '${myip}'\n# Call iptables to ban IP address \nbanaction = iptables-multiport \n\n# Enable sshd protection \n[sshd]\nenabled = true\n\n!' /etc/fail2ban/jail.local
+systemctl start fail2ban
+
+#create users function
+
+#call create user function
+create_user_with_ssh
+
+
+#modify sshd conf
+#Modify SSH Port
+modifySSHPort
+
+#modify LoginGraceTime
+
+modifyLoginGraceTime
+
+#modify PermitRootLogin
+
+modifyPermitRootLogin
+
+#set PubkeyAuthentication
+
+setPubkeyAuthentication
+
+
+#set PasswordAuthentication
+
+setPasswordAuthentication
+
+#install firewall, add new ssh port and initialize
 
 installFirewalld >> "$logFileName"
 
